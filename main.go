@@ -32,6 +32,7 @@ func main() {
 	proto := flag.String("proto", "kitty", "画像プロトコル: sixel / iterm / kitty")
 	still := flag.Bool("still", false, "1 フレームだけ出して終了する（表示確認用）")
 	bg := flag.Bool("bg", false, "背景を宇宙色で塗る（既定は透明）")
+	flag.BoolVar(&reverse, "reverse", false, "右から左へ歩く")
 	scale := flag.Int("scale", 1, "アートピクセルの拡大率")
 	pngPath := flag.String("png", "", "1 フレームを PNG に書き出して終了する（確認用）")
 	social := flag.String("social", "", "GitHub social preview 用の 1280x640 PNG を書き出して終了する")
@@ -100,7 +101,12 @@ func run(proto string, cols, rows, xpix, ypix, scale int, still bool) {
 		return
 	}
 	fmt.Fprint(out, "\x1b[?25l\x1b[2J")
-	for x, tick := -catW, 0; x <= canvasW; x, tick = x+12, tick+1 {
+	const step = 12 // 1 tick あたりの前進量 (px)
+	for tick := 0; tick <= (canvasW+catW)/step; tick++ {
+		x := -catW + step*tick
+		if reverse {
+			x = canvasW - step*tick
+		}
 		draw(c, x, tick/2) // GIF は 70ms ごと = 2 tick に 1 コマ
 		if transparent {
 			fmt.Fprint(out, "\x1b[2J") // 背景で塗り潰さないので前フレームを消す

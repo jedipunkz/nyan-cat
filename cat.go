@@ -33,6 +33,7 @@ var (
 	gifMap      [256]uint8 // GIF のパレット番号 -> canvas のパレット番号 (0 = 透明)
 	palette     [][3]int
 	rainbow0    int
+	reverse     bool // true なら右から左へ、猫も左右反転して歩く
 	transparent bool // true なら背景（パレット 0）を描かず端末の背景を透かす
 	catW, catH  int
 )
@@ -83,9 +84,13 @@ func (c *canvas) clear() {
 func draw(c *canvas, catX, frame int) {
 	c.clear()
 
-	// 虹: 画面左端から胴体の下まで。6 本を 1 区画ごとに上下させる。
+	// 虹: 猫の胴体の下から画面の端まで。6 本を 1 区画ごとに上下させる。
 	stripe := (bodyBot - bodyTop) / len(rainbowRGB)
-	for x := 0; x < catX+bodyLeft && x < c.w; x++ {
+	from, to := 0, catX+bodyLeft
+	if reverse {
+		from, to = catX+catW-bodyLeft, c.w
+	}
+	for x := max(from, 0); x < to && x < c.w; x++ {
 		off := ((x/segW + frame) % 2) * amp
 		for band := range rainbowRGB {
 			for y := bodyTop + band*stripe; y < bodyTop+(band+1)*stripe; y++ {
@@ -100,7 +105,11 @@ func draw(c *canvas, catX, frame int) {
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			if v := gifMap[im.ColorIndexAt(x, y)]; v != 0 {
-				c.set(catX+x, y, v)
+				dx := x
+				if reverse {
+					dx = catW - 1 - x // 猫を左右反転
+				}
+				c.set(catX+dx, y, v)
 			}
 		}
 	}

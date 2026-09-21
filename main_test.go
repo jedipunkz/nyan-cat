@@ -76,3 +76,28 @@ func TestTransparentBackground(t *testing.T) {
 		t.Fatal("虹まで透明になっている")
 	}
 }
+
+func TestReverseMirrorsCat(t *testing.T) {
+	const y = 150 // 脚の行。虹 (bodyBot+amp まで) が届かないので猫だけを比べられる
+	a := newCanvas(catW, catH)
+	draw(a, 0, 0)
+	reverse = true
+	defer func() { reverse = false }()
+	b := newCanvas(catW, catH)
+	draw(b, 0, 0)
+	for x := 0; x < catW; x++ {
+		if a.at(x, y) != b.at(catW-1-x, y) {
+			t.Fatalf("x=%d で鏡像になっていない", x)
+		}
+	}
+	mirrored := true
+	for x := 0; x < catW; x++ { // 元の行が左右対称だと上の検証が自明に通ってしまう
+		if a.at(x, y) != a.at(catW-1-x, y) {
+			mirrored = false
+			break
+		}
+	}
+	if mirrored {
+		t.Fatal("比較行が左右対称で検証にならない")
+	}
+}
