@@ -51,6 +51,7 @@ nyancat -ascii             # no images, ANSI blocks only
 | `-still` | off | Draw a single frame and exit |
 | `-ascii` | off | Draw with ANSI blocks instead of images |
 | `-png` | — | Write one frame to a PNG file and exit |
+| `-social` | — | Write a 1280x640 social preview image and exit |
 
 If nothing shows up, try each protocol with `-still` and use whichever one draws the cat.
 Note that sixel does not survive tmux older than 3.4.
