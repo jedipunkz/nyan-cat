@@ -1,9 +1,17 @@
 name: release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump"
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -13,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # 直近の tag から次の version を決めるため全履歴が要る
 
       - uses: actions/setup-go@v7
         with:
@@ -20,15 +30,43 @@ jobs:
 
       - run: go test ./...
 
+      - name: Decide next version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }} # shell に直接展開しない
+        run: |
+          latest=$(git tag -l 'v*.*.*' --sort=-v:refname | head -n1)
+          latest=${latest:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${latest#v}"
+          case "$BUMP" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+            *) echo "unknown bump: $BUMP" >&2; exit 1 ;;
+          esac
+          version="v${major}.${minor}.${patch}"
+          echo "$latest -> $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
       - name: Build binaries
         env:
+          VERSION: ${{ steps.version.outputs.version }}
           CGO_ENABLED: "0"
         run: |
           mkdir -p dist
           for os in linux darwin; do
             for arch in amd64 arm64; do
               GOOS=$os GOARCH=$arch go build -trimpath -ldflags "-s -w" -o nyancat .
-              tar -czf "dist/nyancat_${GITHUB_REF_NAME}_${os}_${arch}.tar.gz" nyancat README.md
+              tar -czf "dist/nyancat_${VERSION}_${os}_${arch}.tar.gz" nyancat README.md
               rm nyancat
             done
           done
@@ -36,5 +74,6 @@ jobs:
 
       - name: Publish release
         env:
+          VERSION: ${{ steps.version.outputs.version }}
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --generate-notes
+        run: gh release create "$VERSION" dist/* --generate-notes
