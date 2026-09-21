@@ -20,6 +20,9 @@ No image support? `-ascii` falls back to 256-color ANSI blocks.
 
 ## Install
 
+Prebuilt binaries for Linux and macOS (amd64 / arm64) are attached to each
+[release](https://github.com/jedipunkz/nyan-cat/releases). Or install with Go:
+
 ```bash
 go install github.com/jedipunkz/nyan-cat@latest
 ```
