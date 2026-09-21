@@ -34,12 +34,20 @@ func main() {
 	bg := flag.Bool("bg", false, "背景を宇宙色で塗る（既定は透明）")
 	scale := flag.Int("scale", 1, "アートピクセルの拡大率")
 	pngPath := flag.String("png", "", "1 フレームを PNG に書き出して終了する（確認用）")
+	social := flag.String("social", "", "GitHub social preview 用の 1280x640 PNG を書き出して終了する")
 	flag.Parse()
 	transparent = !*bg
 
 	cols, rows, xpix, ypix := termSize()
 	termW, termH = cols, rows
 
+	if *social != "" {
+		if err := writeSocial(*social); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if *pngPath != "" {
 		dumpPNG(*pngPath, *scale)
 		return

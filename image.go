@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	draw2 "image/draw"
 	"image/png"
+	"math/rand/v2"
+	"os"
 )
 
 func frameImage(c *canvas, scale int) *image.RGBA {
@@ -62,4 +65,42 @@ func writeKitty(out *bufio.Writer, c *canvas, scale int) {
 		}
 		fmt.Fprintf(out, "\x1b_Gm=%d;%s\x1b\\", more, chunk)
 	}
+}
+
+// writeSocial は GitHub の social preview 用に 1280x640 の 1 枚絵を書き出す。
+// 猫と虹は透明背景で描き、星空の上に重ねる。
+func writeSocial(path string) error {
+	const w, h, scale = 1280, 640, 2
+
+	c := newCanvas(w/scale, catH)
+	transparent = true
+	draw(c, c.w-catW-40, 0) // 猫を右に寄せ、虹を左端まで伸ばす
+	cat := frameImage(c, scale)
+
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	bg := palette[0]
+	space := color.RGBA{uint8(bg[0]), uint8(bg[1]), uint8(bg[2]), 255}
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			img.Set(x, y, space)
+		}
+	}
+	// 星。毎回同じ絵になるよう種を固定する。
+	rnd := rand.New(rand.NewPCG(4, 2))
+	for i := 0; i < 120; i++ {
+		x, y := rnd.IntN(w), rnd.IntN(h)
+		for _, d := range [][2]int{{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}} {
+			img.Set(x+d[0], y+d[1], color.RGBA{255, 255, 255, 255})
+		}
+	}
+	b := cat.Bounds()
+	at := image.Rect((w-b.Dx())/2, (h-b.Dy())/2, (w-b.Dx())/2+b.Dx(), (h-b.Dy())/2+b.Dy())
+	draw2.Draw(img, at, cat, image.Point{}, draw2.Over)
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return png.Encode(f, img)
 }
