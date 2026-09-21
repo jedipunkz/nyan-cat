@@ -39,6 +39,7 @@ go build -o nyancat . && ./nyancat
 nyancat                    # kitty protocol, transparent background
 nyancat -proto iterm       # iTerm2 inline images
 nyancat -proto sixel       # sixel
+nyancat -reverse           # walk the other way
 nyancat -still             # draw one frame and exit (handy to test your terminal)
 nyancat -ascii             # no images, ANSI blocks only
 ```
@@ -46,6 +47,7 @@ nyancat -ascii             # no images, ANSI blocks only
 | Flag | Default | Description |
 |---|---|---|
 | `-proto` | `kitty` | Image protocol: `kitty`, `iterm`, `sixel` |
+| `-reverse` | off | Walk right to left, cat mirrored |
 | `-bg` | off | Paint the space-colored background instead of leaving it transparent |
 | `-scale` | `1` | Pixel scale factor |
 | `-still` | off | Draw a single frame and exit |
